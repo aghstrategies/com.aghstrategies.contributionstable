@@ -5,47 +5,56 @@ require_once 'contributionstable.civix.php';
  * Implementation of hook_civicrm_tokens
  */
 function contributionstable_civicrm_tokens(&$tokens) {
-  $tokens['contributions'] = array('contributions.itemized' => '');
+  $tokens['contributions'] = array('contributions.itemized' => '', 'contributions.total' => '');
 }
 /**
  * Implementation of hook_civicrm_tokensValues
  */
 function contributionstable_civicrm_tokenValues( &$values, $cids, $job = null, $tokens = array(), $context = null ) {
   if (!empty($tokens['contributions'])){
-    $contributions = array('contributions.itemized' => '');
+    $contributions = array('contributions.itemized' => '', 'contributions.total' => '');
+    $rows = array();
     $header = "
-        <h3>Contributions</h3>
         <table style='text-align:center'>
           <thead>
             <tr>
-              <th>Date Received</th>
-              <th>Tax Deductible Amount</th>              
-              <th>Total Amount</th>
+              <th width='175px'>".ts("Date Received")."</th>
+              <th width='175px'>".ts("Tax Deductible Amount")."</th>              
             </tr>
           </thead>            
     ";
+    $year = date('Y');
+    $last_year = $year -1;
     foreach ($cids as $cid) {
       $dao = &CRM_Core_DAO::executeQuery("
-      SELECT con.total_amount, (con.total_amount - con.non_deductible_amount) as deductible_amount, con.receive_date, cc.display_name
+      SELECT con.total_amount, (con.total_amount - con.non_deductible_amount) as deductible_amount, con.total_amount, con.receive_date, cc.display_name
       FROM civicrm_contribution con
       LEFT JOIN civicrm_contact cc on con.contact_id=cc.id
-      WHERE contact_id = 184"//.$cid.";"
+      WHERE contact_id = ".$cid
+      .
+     " AND con.receive_date BETWEEN '".$last_year."-01-01' AND '".$year."-01-01';"
       );
+      $contributions_total = 0;
       while ($dao->fetch()) {
         $rows[] = '
           <tr>
             <td>' . date('m/d/Y', strtotime($dao->receive_date)) . '</td>
-            <td>$' .($dao->deductible_amount). '</td>            
-            <td>$' . $dao->total_amount . '</td>
+            <td>$' .($dao->total_amount). '</td>            
           </tr>
           ';
+          $contributions_total += $dao->total_amount;
       }
+      $contributions_total = "$".$contributions_total;
       $table = $header;
-      foreach ($rows as $row){
-        $table .= $row;
+      if (!empty($rows)){
+        foreach ($rows as $row){
+          $table .= $row;
+        }
       }
-      $table .= "</table>";
-      $contributions = array('contributions.itemized' => $table);
+      $table .= "
+        </table>";
+
+      $contributions = array('contributions.itemized' => $table, 'contributions.total' => $contributions_total);
       $values[$cid] = empty($values[$cid]) ? $contributions : $values[$cid] + $contributions;
     }  
   }
