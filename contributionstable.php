@@ -5,7 +5,7 @@ require_once 'contributionstable.civix.php';
  * Implementation of hook_civicrm_tokens
  */
 function contributionstable_civicrm_tokens(&$tokens) {
-  $tokens['contributions'] = array('contributions.itemized' => '', 'contributions.total' => '');
+  $tokens['contributions'] = array('contributions.itemized' => 'Contributions Itemized', 'contributions.total' => 'Contributions Total');
 }
 /**
  * Implementation of hook_civicrm_tokensValues
@@ -19,9 +19,9 @@ function contributionstable_civicrm_tokenValues( &$values, $cids, $job = null, $
           <thead>
             <tr>
               <th width='175px'>".ts("Date Received")."</th>
-              <th width='175px'>".ts("Tax Deductible Amount")."</th>              
+              <th width='175px'>".ts("Tax Deductible Amount")."</th>
             </tr>
-          </thead>            
+          </thead>
     ";
     $year = date('Y');
     $last_year = $year -1;
@@ -30,19 +30,34 @@ function contributionstable_civicrm_tokenValues( &$values, $cids, $job = null, $
       SELECT con.total_amount, (con.total_amount - con.non_deductible_amount) as deductible_amount, con.total_amount, con.receive_date, cc.display_name
       FROM civicrm_contribution con
       LEFT JOIN civicrm_contact cc on con.contact_id=cc.id
+      LEFT JOIN civicrm_financial_type ft on con.financial_type_id=ft.id
       WHERE contact_id = ".$cid
       .
-     " AND con.receive_date BETWEEN '".$last_year."-01-01' AND '".$year."-01-01';"
+     " AND con.receive_date BETWEEN '".$last_year."-01-01' AND '".$year."-01-01'
+       AND ft.is_deductible=1
+;"
       );
       $contributions_total = 0;
       while ($dao->fetch()) {
-        $rows[] = '
-          <tr>
-            <td>' . date('m/d/Y', strtotime($dao->receive_date)) . '</td>
-            <td>$' .($dao->total_amount). '</td>            
-          </tr>
-          ';
-          $contributions_total += $dao->total_amount;
+        if ($dao->deductible_amount){
+          $rows[] = '
+            <tr>
+              <td>' . date('m/d/Y', strtotime($dao->receive_date)) . '</td>
+              <td>$' .($dao->deductible_amount). '</td>
+            </tr>
+            ';
+            $contributions_total += $dao->deductible_amount;
+         }
+         else{
+          $rows[] = '
+            <tr>
+              <td>' . date('m/d/Y', strtotime($dao->receive_date)) . '</td>
+              <td>$' .($dao->total_amount). '</td>
+            </tr>
+            ';
+            $contributions_total += $dao->total_amount;
+
+        }
       }
       $contributions_total = "$".$contributions_total;
       $table = $header;
@@ -56,7 +71,7 @@ function contributionstable_civicrm_tokenValues( &$values, $cids, $job = null, $
 
       $contributions = array('contributions.itemized' => $table, 'contributions.total' => $contributions_total);
       $values[$cid] = empty($values[$cid]) ? $contributions : $values[$cid] + $contributions;
-    }  
+    }
   }
 }
 
