@@ -17,6 +17,7 @@
   <compatibility>
     <ver>4.4</ver>
     <ver>4.7</ver>
+    <ver>5.7</ver>
   </compatibility>
   <civix>
     <namespace>CRM/Contributionstable</namespace>
