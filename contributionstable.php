@@ -5,15 +5,15 @@ require_once 'contributionstable.civix.php';
  * Implementation of hook_civicrm_tokens
  */
 function contributionstable_civicrm_tokens(&$tokens) {
-  $tokens['contributions'] = array('contributions.itemized' => 'Contributions Itemized', 'contributions.total' => 'Contributions Total');
+  $tokens['contributions'] = ['contributions.itemized' => 'Contributions Itemized', 'contributions.total' => 'Contributions Total'];
 }
 /**
  * Implementation of hook_civicrm_tokensValues
  */
-function contributionstable_civicrm_tokenValues( &$values, $cids, $job = null, $tokens = array(), $context = null ) {
+function contributionstable_civicrm_tokenValues( &$values, $cids, $job = null, $tokens = [], $context = null ) {
   if (!empty($tokens['contributions'])){
-    $contributions = array('contributions.itemized' => '', 'contributions.total' => '');
-    $rows = array();
+    $contributions = ['contributions.itemized' => '', 'contributions.total' => ''];
+    $rows = [];
     $header = "
         <table style='text-align:center'>
           <thead>
@@ -69,7 +69,7 @@ function contributionstable_civicrm_tokenValues( &$values, $cids, $job = null, $
       $table .= "
         </table>";
 
-      $contributions = array('contributions.itemized' => $table, 'contributions.total' => $contributions_total);
+      $contributions = ['contributions.itemized' => $table, 'contributions.total' => $contributions_total];
       $values[$cid] = empty($values[$cid]) ? $contributions : $values[$cid] + $contributions;
     }
   }
